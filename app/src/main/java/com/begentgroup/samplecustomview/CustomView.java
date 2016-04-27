@@ -7,9 +7,14 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.util.AttributeSet;
+import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Toast;
 
 /**
  * Created by dongja94 on 2016-04-27.
@@ -31,13 +36,46 @@ public class CustomView extends View {
         invalidate();
     }
 
+    private static final String TAG = "CustomView";
     Paint mPaint;
     Bitmap mBitmap;
     int xBitmap, yBitmap;
+    GestureDetector mDetector;
+    Matrix mMatrix;
 
     private void init() {
         mPaint = new Paint();
         mBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.sample_1);
+        mDetector = new GestureDetector(getContext(), new GestureDetector.SimpleOnGestureListener(){
+            @Override
+            public boolean onDown(MotionEvent e) {
+                return true;
+            }
+
+            @Override
+            public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+                Log.i(TAG, "scroll");
+                mMatrix.postTranslate(-distanceX, -distanceY);
+                invalidate();
+                return true;
+            }
+
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                Toast.makeText(getContext(), "Double Tap" , Toast.LENGTH_SHORT).show();
+                mMatrix.postScale(1.5f, 1.5f, e.getX(), e.getY());
+                invalidate();
+                return true;
+            }
+        });
+        mMatrix = new Matrix();
+        mMatrix.reset();
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        boolean isUse = mDetector.onTouchEvent(event);
+        return isUse || super.onTouchEvent(event);
     }
 
     @Override
@@ -83,6 +121,7 @@ public class CustomView extends View {
 
         xBitmap = getPaddingLeft() + width / 2;
         yBitmap = getPaddingTop() + height / 2;
+        mMatrix.setTranslate(xBitmap, yBitmap);
     }
 
     @Override
@@ -94,7 +133,7 @@ public class CustomView extends View {
             cm.setSaturation(0);
             ColorMatrixColorFilter cf = new ColorMatrixColorFilter(cm);
             mPaint.setColorFilter(cf);
-            canvas.drawBitmap(mBitmap, xBitmap, yBitmap, mPaint);
+            canvas.drawBitmap(mBitmap, mMatrix, mPaint);
         }
     }
 }
